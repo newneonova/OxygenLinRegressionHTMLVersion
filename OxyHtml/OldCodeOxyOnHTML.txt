@@ -1,0 +1,77 @@
+Aside:
+
+
+ w = 800;
+ h = 500;
+
+ x = d3.scale.linear()
+    .domain([-w / 2, w / 2])
+    .range([0, w]);
+	
+	 y = d3.scale.linear()
+    .domain([-h / 2, h / 2])
+    .range([h, 0]);
+	
+	 xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom")
+	.ticks(5)
+    .tickSize(-h);
+	
+	 yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .ticks(5)
+    .tickSize(-w);
+	
+	 zoom = d3.behavior.zoom()
+    .x(x)
+    .y(y)
+    .scaleExtent([1, 10])
+    .on("zoom", zoomed);
+	
+	
+//Create SVG element
+ svg = d3.select("body")
+            .append("svg")
+			
+			.style("border-style", "solid")
+			.style("border-width", "3px")
+            .attr("width", w)
+            .attr("height", h);
+			
+	svgg=d3.select("svg").append("g")
+			.call(zoom);
+			
+			   svgg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + h + ")")
+    .call(xAxis);
+	
+	svgg.append("g")
+   .attr("class", "y axis")
+   .call(yAxis);
+   
+			svgg.append("g")
+			.attr("class", "DataPoints")
+			
+			.attr("transform",function(){
+			var RealH=maxO-minO;
+			var RealW=maxT-minT;
+			var Tx=String(-minT);
+			var Ty = String(-minO);//String(-minO);
+			
+			var X= String(   ((w-60)/RealW)    );
+			var Y= String( -((h-60)/RealH));
+			return "translate("+String(30)+","+String(h-30)+") scale("+X+","+Y+") translate("+Tx+","+Ty+")";})
+			.selectAll("circle")
+   .data(DataTable)
+   .enter()
+   .append("circle")   
+   .attr("cx", function(d) {
+        return d[0];
+   })
+   .attr("cy", function(d) {
+        return d[1];
+   })
+   .attr("r", .5);

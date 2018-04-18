@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+    <title>Oxygen Plot linear regression for Web</title>
+	 <script type="text/javascript" src="d3/d3.js"></script>
+	</head>
+	
+	 <style>
+body {
+  position: relative;
+  //width: 960px;
+}
+
+svg {
+  font: 10px sans-serif;
+  //shape-rendering: crispEdges;
+}
+
+rect {
+  fill: #ddd;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #fff;
+}
+</style>
+
+<body>
+
+
+
+  <input type="file" id="file" />
+
+  <button type="button" onclick="reset()"> Reset Graph </button>
+<button type="button" onclick="AddToTable()"> Save To Table </button>
+
+<table id="Table">
+  <tr>
+    <td>Min</td>
+    <td>Max</td>
+	    <td>Slope</td>
+    <td>R2</td>
+  </tr>
+
+</table>
+
+ <script type="text/javascript">
+ DataTable=[];
+ minT=1000;
+maxT=0;
+minO=1000;
+maxO=0;
+
+LeftAnno=0;
+RightAnno=100;
+ R=0;
+ M=0;
+ Min=0;
+ Max=0;
+
+
+
+/*function zoomed() {
+  svg.select(".x.axis").call(xAxis);
+  svg.select(".y.axis").call(yAxis);
+}*/
+
+window.onresize = function(event) {
+
+MakeScatter();
+};
+
+function AddToTable(){
+//Save Min, Max, M and R2 to table on side.
+Parent=document.getElementById("Table");
+
+var closetable=document.createElement("tr");
+closetable.innerHTML="  <td>"+Min+"</td>  <td>"+Max+"</td> <td>"+M+"</td><td>"+R+"</td>";
+Parent.appendChild(closetable);
+}
+
+ function MakeScatter(){
+
+ d3.selectAll("svg").remove();
+  margin = {top: 60, right: 60, bottom: 150, left: 150};
+  var WWWW = window.innerWidth
+|| document.documentElement.clientWidth
+|| document.body.clientWidth;
+
+var HHHH = window.innerHeight
+|| document.documentElement.clientHeight
+|| document.body.clientHeight;
+
+    width = WWWW- margin.left - margin.right,
+    height = HHHH - margin.top - margin.bottom;
+	
+	w=width;
+	h=height;
+
+			var RealH=maxO-minO+100;
+			var RealW=maxT-minT+100;
+
+
+ x = d3.scale.linear()
+    .domain([minT-10, maxT+10])
+    .range([0, width]);
+
+ y = d3.scale.linear()
+    .domain([minO-50, maxO+50])
+    .range([height, 0]);
+
+ xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom")
+    .tickSize(-height);
+
+ yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .ticks(5)
+    .tickSize(-width);
+	
+
+	
+	
+		zoom = d3.behavior.zoom()
+    .x(x)
+    .y(y)
+   .scaleExtent([1, 10])
+    .on("zoom", zoomed);
+
+ 
+
+
+ svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+  .attr("id","zoomwindow")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    .call(zoom)
+	.on("mousemove.zoom", null)
+	.on("mousedown.zoom", null)
+	.on("contextmenu", function(data, index) {
+     //handle right click
+
+     //stop showing browser menu
+     d3.event.preventDefault()
+}).attr('onmousedown','grabit()')
+.attr('onmousemove','moveit()')
+.attr('onmouseup','dropit()');
+
+svg.append("rect")
+    .attr("width", width)
+    .attr("height", height);
+
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis);
+
+	
+	var Anno=svg.append("g").attr("class","annotations");
+	Anno.append("line")
+	.attr("x1",x(LeftAnno)).attr("x2",x(LeftAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	Anno.append("line")
+	.attr("x1",x(RightAnno)).attr("x2",x(RightAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	
+svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis);
+
+	svg.append("g")
+	.attr("class","data")
+
+	.selectAll("circle")
+   .data(DataTable)
+   .enter()
+   .append("circle")   
+
+   .attr("cx", function(d) {
+        return x(d[0]);
+   })
+
+   .attr("cy", function(d) {
+        return y(d[1])
+   })
+   
+   .attr("r", 1);
+	
+	
+//d3.select("button").on("click", reset);
+ 
+	}
+
+	grableft=false;
+	grabright=false;
+	click=false;
+	
+	function dropit(){
+		grableft=false;
+	grabright=false;
+	click=false;
+	}
+	
+function grabit(){
+var Asvg = document.querySelector('svg');
+var pt = Asvg.createSVGPoint();
+
+
+pt.x = event.clientX; pt.y = event.clientY;
+
+var NewPt=pt.matrixTransform(Asvg.getScreenCTM().inverse());
+
+var Xcoord=x.invert(NewPt.x-margin.left);
+if( Math.abs(Xcoord-LeftAnno) <10 ){
+grableft=true;
+click=true;
+LeftAnno=Xcoord;
+}
+else if( Math.abs(Xcoord-RightAnno) <10 ){
+grabright=true;
+click=true;
+RightAnno=Xcoord;
+}
+UpdateAnno();
+
+
+}
+
+function moveit(){
+if(click){
+var Asvg = document.querySelector('svg');
+var pt = Asvg.createSVGPoint();
+
+
+pt.x = event.clientX; pt.y = event.clientY;
+
+var NewPt=pt.matrixTransform(Asvg.getScreenCTM().inverse());
+var Xcoord=x.invert(NewPt.x-margin.left);
+if(grableft){
+LeftAnno=Xcoord;
+UpdateAnno();
+}
+else if(grabright){
+RightAnno=Xcoord;
+UpdateAnno();
+}
+
+
+}
+}
+
+function UpdateAnno(){
+svg.selectAll(".annotations").remove();
+//svg.selectAll("line").remove();
+	var Anno=svg.append("g").attr("class","annotations");
+	Anno.append("line")
+	.attr("x1",x(LeftAnno)).attr("x2",x(LeftAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	Anno.append("line")
+	.attr("x1",x(RightAnno)).attr("x2",x(RightAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	
+	Analize();
+}
+
+function Analize(){
+ Max = LeftAnno;
+ Min = RightAnno;
+
+if(Max<Min){
+Min=LeftAnno;
+Max=RightAnno;
+}
+Min=Math.floor(Min);
+Max=Math.ceil(Max);
+var WorkWithX=[];
+var WorkWithY=[];
+for(var i=0; i<DataTable.length;i++){
+if ((DataTable[i][0]>=Min) &&  (DataTable[i][0]<=Max)){
+WorkWithX.push(DataTable[i][0]);
+WorkWithY.push(DataTable[i][1]);
+} }
+
+KGB=linearRegression(WorkWithY,WorkWithX);
+
+svg.selectAll(".SuperLine").remove();
+//svg.selectAll("line").remove();
+	var Anno=svg.append("g").attr("class","SuperLine");
+	Anno.append("line")
+	.attr("x1",x(0)).attr("x2",x(1000)).attr("y1",y(KGB.intercept)).attr("y2",y(KGB.slope*1000+KGB.intercept)).attr("style","stroke:rgb(0,100,100);stroke-width:2");
+
+	var Tation=Anno.append("text").attr("x",0).attr("id","lookatme").attr("y",0).attr("font-family","sans-serif" ).attr("font-size","20px").attr("fill","black").append("LELELELE");
+	document.getElementById("lookatme").innerHTML = "Min: "+String(Min)+" Max: "+String(Max)+" Slope: "+String(KGB.slope)+" Rsquared: "+String(KGB.r2);
+	//console.log(KGB);
+	M=KGB.slope;
+	R=KGB.r2;
+
+}
+
+function linearRegression(y,x){
+		var lr = {};
+		var n = y.length;
+		var sum_x = 0;
+		var sum_y = 0;
+		var sum_xy = 0;
+		var sum_xx = 0;
+		var sum_yy = 0;
+		
+		for (var i = 0; i < y.length; i++) {
+			
+			sum_x += x[i];
+			sum_y += y[i];
+			sum_xy += (x[i]*y[i]);
+			sum_xx += (x[i]*x[i]);
+			sum_yy += (y[i]*y[i]);
+		} 
+		
+		lr['slope'] = (n * sum_xy - sum_x * sum_y) / (n*sum_xx - sum_x * sum_x);
+		lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
+		lr['r2'] = Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2);
+		
+		return lr;
+}
+
+
+function zoomed() {
+var Button = d3.event.sourceEvent.button;
+
+
+
+  svg.select(".x.axis").call(xAxis);
+  svg.select(".y.axis").call(yAxis);
+  svg.selectAll("circle").attr("cx", function(d) {
+        return x(d[0]);
+   })   .attr("cy", function(d) {
+        return y(d[1])
+   });
+
+svg.selectAll(".annotations").remove();
+//svg.selectAll("line").remove();
+	var Anno=svg.append("g").attr("class","annotations");
+	Anno.append("line")
+	.attr("x1",x(LeftAnno)).attr("x2",x(LeftAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	Anno.append("line")
+	.attr("x1",x(RightAnno)).attr("x2",x(RightAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	
+
+
+  
+  
+  
+}
+
+
+function reset() {
+
+MakeScatter();
+}
+
+
+function handleFileSelect(evt) {
+DataTable=[];
+     f = evt.target.files[0]; // FileList object
+	console.log(file);
+	reader = new FileReader();
+	reader.onload = function(e){
+	
+	 contents = e.target.result.split('\r');
+	 readData=false;
+	for(var i=0; i<contents.length; i++){
+	
+	if(readData==true){
+	var t=parseFloat(contents[i].split('\t')[2]);
+	var O=parseFloat(contents[i].split('\t')[4]);
+	DataTable.push([t,O]);
+	
+	
+	if(t<minT){
+	minT=t;}
+	if(t>maxT){
+	maxT=t;}
+	if(O<minO){
+	minO=O;
+	}
+	if(O>maxO){
+	maxO=O;
+	}
+	
+	
+	
+	}
+	else{
+	if (contents[i].split('\t')[1]=="Time (HH:MM:SS)"){
+	readData=true;
+	}
+	
+	}
+	
+	
+	}
+	MakeScatter();
+	//console.log(contents);
+	
+	
+	
+	}
+	reader.readAsText(f);
+	
+	
+	
+	
+	
+    // files is a FileList of File objects. List some properties.
+   
+  }
+
+  
+  document.getElementById('file').addEventListener('change', handleFileSelect, false);
+</script>
+ 
+</body>
+</html>
