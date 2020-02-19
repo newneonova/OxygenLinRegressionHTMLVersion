@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+    <title>Oxygen Plot linear regression for Web</title>
+	 <script type="text/javascript" src="d3/d3.js"></script>
+	</head>
+	
+	 <style>
+body {
+  position: relative;
+  //width: 960px;
+}
+
+svg {
+  font: 10px sans-serif;
+  //shape-rendering: crispEdges;
+}
+
+rect {
+  fill: #ddd;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #fff;
+}
+</style>
+
+<body>
+
+
+
+  <input type="file" id="file" />
+
+  <button type="button" onclick="reset()"> Reset Graph </button>
+<button type="button" onclick="AddToTable()"> Save To Table </button>
+
+<table id="Table">
+  <tr>
+    <td>Min</td>
+    <td>Max</td>
+	    <td>Slope</td>
+    <td>R2</td>
+  </tr>
+
+</table>
+
+ <script type="text/javascript">
+ var CSS_COLOR_NAMES = ["black","red","blue",'green','cyan','orange','lime','brown','magenta','pink','silver'];
+ DataTables=[];
+ DataTable=[];
+ TimeTime=[];
+ minT=4584413223006000;
+maxT=0;
+minO=4584413223006000;
+maxO=-1231231231231230;
+
+LeftAnno=0;
+RightAnno=100;
+ R=0;
+ M=0;
+ Min=0;
+ Max=0;
+
+
+
+/*function zoomed() {
+  svg.select(".x.axis").call(xAxis);
+  svg.select(".y.axis").call(yAxis);
+}*/
+
+window.onresize = function(event) {
+
+MakeScatter();
+};
+
+function AddToTable(){
+//Save Min, Max, Column M and R2 minO2 maxO2 to table on side.
+Parent=document.getElementById("Table");
+
+var closetable=document.createElement("tr");
+var base = " <td>"+TimestampS+"</td><td>"+TimestampE+"</td>  <td>"+Min+"</td>  <td>"+Max+"</td>";
+var Append="";
+for(var v = 0 ;v<DataColTitle.length;v++){
+Append+="<td>"+M[v]+"</td><td>"+R[v]+"</td>"+"<td>"+OMin[v]+"</td>"+"<td>"+OMax[v]+"</td>";
+}
+closetable.innerHTML= base+Append;
+Parent.appendChild(closetable);
+}
+
+ function MakeScatter(){
+
+ d3.selectAll("svg").remove();
+  margin = {top: 60, right: 60, bottom: 150, left: 150};
+  var WWWW = window.innerWidth
+|| document.documentElement.clientWidth
+|| document.body.clientWidth;
+
+var HHHH = window.innerHeight
+|| document.documentElement.clientHeight
+|| document.body.clientHeight;
+
+    width = WWWW- margin.left - margin.right,
+    height = HHHH - margin.top - margin.bottom;
+	
+	w=width;
+	h=height;
+
+			var RealH=maxO-minO+100;
+			var RealW=maxT-minT+100;
+
+
+ x = d3.scale.linear()
+    .domain([minT-10, maxT+10])
+    .range([0, width]);
+
+ y = d3.scale.linear()
+    .domain([minO-50, maxO+50])
+    .range([height, 0]);
+
+ xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom")
+    .tickSize(-height)
+	.tickFormat(function(d,i){
+	
+	let D = new Date(minTime);
+	console.log(d,i);
+	D.setSeconds(D.getSeconds()+(d-minT));
+	
+	return D.toLocaleTimeString()
+	});
+
+ yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .ticks(5)
+    .tickSize(-width);
+	
+
+	
+	
+		zoom = d3.behavior.zoom()
+    .x(x)
+    .y(y)
+   .scaleExtent([1, 10])
+    .on("zoom", zoomed);
+
+ 
+
+
+ svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+  .attr("id","zoomwindow")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+    .call(zoom)
+	.on("mousemove.zoom", null)
+	.on("mousedown.zoom", null)
+	.on("contextmenu", function(data, index) {
+     //handle right click
+
+     //stop showing browser menu
+     d3.event.preventDefault()
+}).attr('onmousedown','grabit()')
+.attr('onmousemove','moveit()')
+.attr('onmouseup','dropit()');
+
+svg.append("rect")
+    .attr("width", width)
+    .attr("height", height);
+
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis);
+
+	
+	var Anno=svg.append("g").attr("class","annotations");
+	Anno.append("line")
+	.attr("x1",x(LeftAnno)).attr("x2",x(LeftAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	Anno.append("line")
+	.attr("x1",x(RightAnno)).attr("x2",x(RightAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	
+	
+
+	
+svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis);
+
+	
+		for(var k=0;k<DataCols.length;k++){
+		svg.append("g")
+	.attr("class","data_"+k)
+	.selectAll("circle")
+   .data(DataTables[k])
+   .enter()
+   .append("circle")   
+   .attr("cx", function(d) {
+        return x(d[0]);
+   })
+   .attr("cy", function(d) {
+        return y(d[1])
+   })
+   .attr("r", 1)
+   .attr("fill",CSS_COLOR_NAMES[k]);
+	}
+	
+
+	
+	
+//d3.select("button").on("click", reset);
+	Analize();
+	}
+
+	grableft=false;
+	grabright=false;
+	click=false;
+	
+	function dropit(){
+		grableft=false;
+	grabright=false;
+	click=false;
+	}
+	
+function grabit(){
+var Asvg = document.querySelector('svg');
+var pt = Asvg.createSVGPoint();
+
+
+pt.x = event.clientX; pt.y = event.clientY;
+
+var NewPt=pt.matrixTransform(Asvg.getScreenCTM().inverse());
+
+var Xcoord=x.invert(NewPt.x-margin.left);
+if( Math.abs(Xcoord-LeftAnno) <10 ){
+grableft=true;
+click=true;
+LeftAnno=Xcoord;
+}
+else if( Math.abs(Xcoord-RightAnno) <10 ){
+grabright=true;
+click=true;
+RightAnno=Xcoord;
+}
+UpdateAnno();
+
+
+}
+
+function moveit(){
+if(click){
+var Asvg = document.querySelector('svg');
+var pt = Asvg.createSVGPoint();
+
+
+pt.x = event.clientX; pt.y = event.clientY;
+
+var NewPt=pt.matrixTransform(Asvg.getScreenCTM().inverse());
+var Xcoord=x.invert(NewPt.x-margin.left);
+if(grableft){
+LeftAnno=Xcoord;
+UpdateAnno();
+}
+else if(grabright){
+RightAnno=Xcoord;
+UpdateAnno();
+}
+
+
+}
+}
+
+function UpdateAnno(){
+svg.selectAll(".annotations").remove();
+//svg.selectAll("line").remove();
+	var Anno=svg.append("g").attr("class","annotations");
+	Anno.append("line")
+	.attr("x1",x(LeftAnno)).attr("x2",x(LeftAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	Anno.append("line")
+	.attr("x1",x(RightAnno)).attr("x2",x(RightAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	
+	Analize();
+}
+
+function Analize(){
+ Max = LeftAnno;
+ Min = RightAnno;
+AnnLine = "  ";
+if(Max<Min){
+Min=LeftAnno;
+Max=RightAnno;
+}
+Min=Math.floor(Min);
+Max=Math.ceil(Max);
+TimestampE=getTimestamp(Max);
+TimestampS=getTimestamp(Min);
+var WorkWithX=[];
+KGB=[];
+M=[];
+R=[];
+OMin=[];
+OMax=[];
+
+var WorkWithY=[];
+
+svg.selectAll(".SuperLine").remove();
+	var Anno=svg.append("g").attr("class","SuperLine");
+Anno.append("text").attr("x",0).attr("id","lookatme").attr("y",0).attr("font-family","sans-serif" ).attr("font-size","20px").attr("fill","black").append("LELELELE");
+for(var v = 0; v<DataCols.length;v++){
+WorkWithX.push([]);
+WorkWithY.push([]);
+for(var i=0; i<DataTables[v].length;i++){
+if ((DataTables[v][i][0]>=Min) &&  (DataTables[v][i][0]<=Max)){
+WorkWithX[v].push(DataTables[v][i][0]);
+WorkWithY[v].push(DataTables[v][i][1]);
+} }
+
+KGB.push(linearRegression(WorkWithY[v],WorkWithX[v]));
+
+
+
+
+//svg.selectAll("line").remove();
+
+	Anno.append("line")
+	.attr("x1",x(Min-60)).attr("x2",x(Max+60)).attr("y1",y(WorkWithY[v][0])).attr("y2",y(KGB[v].slope*(Max+60-(Min-60))+WorkWithY[v][0])).attr("style","stroke:rgb(0,100,100);stroke-width:2");
+AnnLine+=DataColTitle[v]+": slope:"+String(KGB[v].slope)+" Rsquared: "+String(KGB[v].r2)+"  Starting O2: " + String(KGB[v].lowO) +"  Ending O2:"+String(KGB[v].highO) ;
+
+	//console.log(KGB);
+	M.push(KGB[v].slope);
+	R.push(KGB[v].r2);
+	OMin.push(KGB[v].lowO);
+	OMax.push(KGB[v].highO);
+	Base = "Min: "+String(Min)+" Max: "+String(Max);
+}
+document.getElementById("lookatme").innerHTML = Base+AnnLine;
+
+}
+
+function linearRegression(y,x){
+		var lr = {};
+		var n = y.length;
+		var sum_x = 0;
+		var sum_y = 0;
+		var sum_xy = 0;
+		var sum_xx = 0;
+		var sum_yy = 0;
+		
+		
+		for (var i = 0; i < y.length; i++) {
+			
+			sum_x += x[i];
+			sum_y += y[i];
+			sum_xy += (x[i]*y[i]);
+			sum_xx += (x[i]*x[i]);
+			sum_yy += (y[i]*y[i]);
+		} 
+		
+		lr['slope'] = (n * sum_xy - sum_x * sum_y) / (n*sum_xx - sum_x * sum_x);
+		lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
+		lr['r2'] = Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2);
+		var minXV = x[0];
+		var maxXV= x[0];
+		var minX = 0;
+		var maxX = 0;
+		for (var i = 0; i < x.length; i++) {
+			if(x[i]<minXV){
+			minXV=x[i];
+			minX=i;
+			}
+				if(x[i]>maxXV){
+			maxXV=x[i];
+			maxX=i;
+			}
+		
+		} 
+		lr['lowO']=y[minX];
+		lr['highO']=y[maxX];
+		
+		
+		
+		return lr;
+}
+
+
+function zoomed() {
+var Button = d3.event.sourceEvent.button;
+
+
+
+  svg.select(".x.axis").call(xAxis);
+  svg.select(".y.axis").call(yAxis);
+  svg.selectAll("circle").attr("cx", function(d) {
+        return x(d[0]);
+   })   .attr("cy", function(d) {
+        return y(d[1])
+   });
+
+svg.selectAll(".annotations").remove();
+//svg.selectAll("line").remove();
+	var Anno=svg.append("g").attr("class","annotations");
+	Anno.append("line")
+	.attr("x1",x(LeftAnno)).attr("x2",x(LeftAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	Anno.append("line")
+	.attr("x1",x(RightAnno)).attr("x2",x(RightAnno)).attr("y1",height).attr("y2",0).attr("style","stroke:rgb(255,0,0);stroke-width:2");
+	
+
+
+  
+  
+  
+}
+
+
+function reset() {
+
+MakeScatter();
+}
+
+function getTimestamp(InTime){
+for(var h=0;h<TimeTime.length;h++){
+if(TimeTime[h][0]>=InTime){
+return TimeTime[h][1];
+}
+
+}
+return "";
+}
+
+
+function handleFileSelect(evt) {
+DataTables=[];
+DataTable=[];
+TimeTime=[];
+     f = evt.target.files[0]; // FileList object
+	console.log(file);
+	reader = new FileReader();
+
+	reader.onload = function(e){
+	
+	 IsRelTime = -1;
+	 contents = e.target.result.split('\r');
+	 readData=false;
+	 TimeStampCol=-1;
+	 RelTimeCol=-1;
+	 DataCols=[];
+	 DataColTitle=[];
+	for(var i=0; i<contents.length; i++){
+	if(!readData){
+	var row = contents[i].split(',');
+	
+	
+	
+	for(var j=0; j<row.length;j++){
+	if (TimeStampCol==-1 && row[j].toLowerCase().indexOf('time')>-1){
+	TimeStampCol=j;
+	}
+	else if(RelTimeCol==-1 &&(row[j].toLowerCase().indexOf('time')>-1&&row[j].toLowerCase().indexOf('rel')>-1)){
+RelTimeCol=j;
+}	
+	
+	if(row[j].toLowerCase().indexOf('time')==-1){
+	DataCols.push(j);
+	DataTables.push([]);
+	DataColTitle.push(row[j]);
+	}
+	
+	
+	}
+	if(RelTimeCol==-1){
+	RelTimeCol=TimeStampCol;
+	}
+	
+	var base = "<tbody><tr><td>Timestamp Start</td><td>Timestamp End</td><td>Min</td><td>Max</td>"
+	var Add="";
+	for(var g=0;g<DataColTitle.length;g++){
+	Add+="<td>"+DataColTitle[g]+" Slope</td><td>"+DataColTitle[g]+" R2</td><td>"+DataColTitle[g]+" Initial O2</td><td>"+DataColTitle[g]+" Final O2</td>"
+	}
+	Add+="</tr></tbody>"
+	document.getElementById("Table").innerHTML=base+Add;
+	
+	readData=true;
+	continue;
+	}
+	
+	if(readData==true){
+	var row = contents[i].split(',');
+ if (IsRelTime == -1  ){
+ 
+var Tsample = contents[i].split(',')[RelTimeCol]
+IsRelTime = 1;
+if(Tsample.indexOf("AM")>-1 || Tsample.indexOf("PM")>-1 || Tsample.indexOf(":")>-1){
+IsRelTime = 0;
+}
+
+ 
+ 
+ }
+ var t=0;
+ if(IsRelTime==0){
+ t = new Date(row[RelTimeCol]).getTime();
+ }
+ else{
+ t = parseFloat(row[RelTimeCol]);
+ }
+ TimeTime.push([t,row[TimeStampCol]]);
+
+ for(var k=0;k<DataCols.length;k++){
+ 
+ 
+ var DrawRow=[];
+ DrawRow.push(t);
+
+ O=parseFloat(row[DataCols[k]]);
+  DrawRow.push(O);
+  	if(O<minO){
+	minO=O;
+	}
+	if(O>maxO){
+	maxO=O;
+	}
+ 
+
+	DataTables[k].push(DrawRow);
+		if(t<minT){
+	minT=t;
+	minTime = row[TimeStampCol];
+	}
+	
+	if(t>maxT){
+	maxT=t;}
+	}
+	
+	
+
+
+	
+	
+	
+	}
+
+	
+	
+	}
+	
+
+	
+	MakeScatter();
+	//console.log(contents);
+	
+	
+	
+	}
+	reader.readAsText(f);
+	
+	
+	
+	
+	
+    // files is a FileList of File objects. List some properties.
+   
+  }
+
+  
+  document.getElementById('file').addEventListener('change', handleFileSelect, false);
+</script>
+ 
+</body>
+</html>
