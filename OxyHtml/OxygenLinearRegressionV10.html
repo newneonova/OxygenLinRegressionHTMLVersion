@@ -9734,17 +9734,26 @@ var Asvg = document.querySelector('svg');
 var pt = Asvg.createSVGPoint();
 
 
+
+
+
 pt.x = event.clientX; pt.y = event.clientY;
 
 var NewPt=pt.matrixTransform(Asvg.getScreenCTM().inverse());
 
 var Xcoord=x.invert(NewPt.x-margin.left);
-if( Math.abs(Xcoord-LeftAnno) <10 ){
+
+var DistToLeft = Math.abs(Xcoord-LeftAnno) ;
+var DistToRight = Math.abs(Xcoord-RightAnno);
+
+
+
+if(DistToLeft<DistToRight && (DistToLeft<10 || DistToLeft<((RightAnno-LeftAnno)/10 ))){
 grableft=true;
 click=true;
 LeftAnno=Xcoord;
 }
-else if( Math.abs(Xcoord-RightAnno) <10 ){
+else if(DistToLeft>=DistToRight && (DistToRight<10 || DistToRight<((RightAnno-LeftAnno)/10 ))){
 grabright=true;
 click=true;
 RightAnno=Xcoord;
@@ -9826,11 +9835,18 @@ KGB.push(linearRegression(WorkWithY[v],WorkWithX[v]));
 
 
 
-
+ StartX = x(WorkWithX[v][0]-60);
+ EndX = x(WorkWithX[v][WorkWithX[v].length-1]+60);
+ b = WorkWithY[v][0] - KGB[v].slope*WorkWithX[v][0];
+ StartY = y( (WorkWithX[v][0]-60)*KGB[v].slope + b);
+ EndY = y( (WorkWithX[v][WorkWithX[v].length-1]+60)*KGB[v].slope + b);
+//y=MX+b
+//y(WorkWithY[v][0]) = SLOPE*x(WorkWithX[v][0]) +b
+//y(WorkWithY[v][0]) - SLOPE*x(WorkWithX[v][0]) = b
 //svg.selectAll("line").remove();
 
 	Anno.append("line")
-	.attr("x1",x(Min-60)).attr("x2",x(Max+60)).attr("y1",y(WorkWithY[v][0])).attr("y2",y(KGB[v].slope*(Max+60-(Min-60))+WorkWithY[v][0])).attr("style","stroke:rgb(0,100,100);stroke-width:2");
+	.attr("x1",StartX).attr("x2",EndX).attr("y1",StartY).attr("y2",EndY).attr("style","stroke:rgb(0,100,100);stroke-width:2");
 AnnLine+=DataColTitle[v]+": slope:"+String(KGB[v].slope)+" Rsquared: "+String(KGB[v].r2)+"  Starting O2: " + String(KGB[v].lowO) +"  Ending O2:"+String(KGB[v].highO) ;
 
 	//console.log(KGB);
